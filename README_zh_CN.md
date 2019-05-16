@@ -1,4 +1,4 @@
-# 适用于Amazon S3兼容云存储的Minio JavaScript Library [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
+# 适用于Amazon S3兼容云存储的MInIO JavaScript Library [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
 [![NPM](https://nodei.co/npm/minio.png)](https://nodei.co/npm/minio/)
 
@@ -6,7 +6,7 @@ MinIO JavaScript Client SDK提供简单的API来访问任何Amazon S3兼容的�
 
 本快速入门指南将向您展示如何安装客户端SDK并执行示例JavaScript程序。有关API和示例的完整列表，请参阅[JavaScript客户端API参考](https://docs.min.io/docs/javascript-client-api-reference)文档。
 
-本文假设你已经安装了[nodejs](http://nodejs.org/) 。
+本文假设你已经设置了可工作的[nodejs](http://nodejs.org/) 。
 
 ## 使用NPM下载
 
@@ -23,9 +23,15 @@ npm install
 npm install -g
 ```
 
-## 初使化Minio Client
+## 使用TypeScript
 
-你需要设置5个属性来链接Minio对象存储服务。
+```sh
+npm install --save-dev @types/minio
+```
+
+## 初使化MInIO Client
+
+你需要设置5个属性来链接MInIO对象存储服务。
 
 | 参数     | 描述 |
 | :------- | :------------ |
@@ -33,7 +39,7 @@ npm install -g
 |port| TCP/IP端口号。可选值，如果是使用HTTP的话，默认值是`80`；如果使用HTTPS的话，默认值是`443`。|
 | accessKey | Access key是唯一标识你的账户的用户ID。  |
 | secretKey	| Secret key是你账户的密码。   |
-|useSSL |true代表使用HTTPS |
+|useSSL |设置值为‘true’来启用安全访问（HTTPS） |
 
 
 ```js
@@ -48,18 +54,18 @@ var minioClient = new Minio.Client({
 });
 ```
 
-## 示例-文件上传
+## 快速入门示例 - 文件上传
 
 本示例连接到一个对象存储服务，创建一个存储桶并上传一个文件到存储桶中。
 
-我们在本示例中使用运行在 [https://play.min.io:9000](https://play.min.io:9000) 上的Minio服务，你可以用这个服务来开发和测试。示例中的访问凭据是公开的。
+我们在本示例中使用运行在 [https://play.min.io:9000](https://play.min.io:9000) 上的MInIO服务，你可以用这个服务来开发和测试。示例中的访问凭据是公开的。
 
 #### file-uploader.js
 
 ```js
 var Minio = require('minio')
 
-// Instantiate the minio client with the endpoint
+// 具有端点的minio客户端和如下所示的minio访问秘钥Instantiate the minio client with the endpoint
 // and access keys as shown below.
 var minioClient = new Minio.Client({
     endPoint: 'play.minio.io',
@@ -69,10 +75,10 @@ var minioClient = new Minio.Client({
     secretKey: 'zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG'
 });
 
-// File that needs to be uploaded.
+// 需要被上传的文件。
 var file = '/tmp/photos-europe.tar'
 
-// Make a bucket called europetrip.
+// 创建一个叫做enropetrip的存储桶。
 minioClient.makeBucket('europetrip', 'us-east-1', function(err) {
     if (err) return console.log(err)
 
@@ -83,7 +89,7 @@ minioClient.makeBucket('europetrip', 'us-east-1', function(err) {
         'X-Amz-Meta-Testing': 1234,
         'example': 5678
     }
-    // Using fPutObject API upload your file to the bucket europetrip.
+    // 使用fPutObject API上传文件到存储桶europertrip。
     minioClient.fPutObject('europetrip', 'photos-europe.tar', file, metaData, function(err, etag) {
       if (err) return console.log(err)
       console.log('File uploaded successfully.')
@@ -101,9 +107,10 @@ mc ls play/europetrip/
 [2016-05-25 23:49:50 PDT]  17MiB photos-europe.tar
 ```
 
-## API文档
+## API参考文档
 
-完整的API文档在这里。
+完整的API参考文档在这里。
+
 * [完整API文档](https://docs.min.io/docs/javascript-client-api-reference)
 
 ### API文档 : 操作存储桶
@@ -185,7 +192,7 @@ mc ls play/europetrip/
 * [remove-all-bucket-notification.js](https://github.com/minio/minio-js/blob/master/examples/remove-all-bucket-notification.js)
 * [listen-bucket-notification.js](https://github.com/minio/minio-js/blob/master/examples/minio/listen-bucket-notification.js) (MinIO Extension)
 
-#### 完整示例 : 存储桶策略
+#### 完整示例 : 存储桶策略操作
 * [get-bucket-policy.js](https://github.com/minio/minio-js/blob/master/examples/get-bucket-policy.js)
 * [set-bucket-policy.js](https://github.com/minio/minio-js/blob/master/examples/set-bucket-policy.js)
 

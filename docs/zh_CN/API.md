@@ -1,6 +1,6 @@
 # JavaScript Client API参考文档 [![Slack](https://slack.min.io/slack?type=svg)](https://slack.min.io)
 
-## 初使化Minio Client object.
+## 初使化MinIO Client对象.
 
 ## MinIO
 
@@ -32,11 +32,12 @@ var s3Client = new Minio.Client({
 | [`makeBucket`](#makeBucket)    | [`getObject`](#getObject) | [`presignedUrl`](#presignedUrl) | [`getBucketNotification`](#getBucketNotification) |
 | [`listBuckets`](#listBuckets)  | [`getPartialObject`](#getPartialObject)    |   [`presignedGetObject`](#presignedGetObject) | [`setBucketNotification`](#setBucketNotification) |
 | [`bucketExists`](#bucketExists) | [`fGetObject`](#fGetObject)    |    [`presignedPutObject`](#presignedPutObject) | [`removeAllBucketNotification`](#removeAllBucketNotification) |
-| [`removeBucket`](#removeBucket)      | [`putObject`](#putObject) |    [`presignedPostPolicy`](#presignedPostPolicy) | [`getBucketPolicy`](#getBucketPolicy) |  | 
+| [`removeBucket`](#removeBucket)      | [`putObject`](#putObject) |    [`presignedPostPolicy`](#presignedPostPolicy) | [`getBucketPolicy`](#getBucketPolicy) |  |
 | [`listObjects`](#listObjects) | [`fPutObject`](#fPutObject)   |   |   [`setBucketPolicy`](#setBucketPolicy)
 | [`listObjectsV2`](#listObjectsV2) | [`copyObject`](#copyObject) | | [`listenBucketNotification`](#listenBucketNotification)|
 | [`listIncompleteUploads`](#listIncompleteUploads) |  [`statObject`](#statObject) |
 |     |  [`removeObject`](#removeObject)    |
+|     |  [`removeObjects`](#removeObjects)    |
 |  | [`removeIncompleteUpload`](#removeIncompleteUpload)  |
   
 
@@ -57,15 +58,17 @@ __参数__
 |---|---|---|
 | `endPoint`  |  _string_ | endPoint是一个主机名或者IP地址。 |
 | `port` | _number_  | TCP/IP端口号。可选，默认值是，如果是http,则默认80端口，如果是https,则默认是443端口。 |
+|`useSSL`    | _bool_    |如果是true，则用的是https而不是http,默认值是true。 |
 | `accessKey`   | _string_   |accessKey类似于用户ID，用于唯一标识你的账户。 |
 |`secretKey`  |  _string_   | secretKey是你账户的密码。|
-|`useSSL`    | _bool_    |如果是true，则用的是https而不是http,默认值是true。 |
 |`region`    | _string_  |设置该值以覆盖自动发现存储桶region。（可选）|
+|`transport`    | _string_  |设置此值以传递自定义传输。(可选)|
+|`sessionToken`    | _string_  |设置此值以提供x-amz-security-token (AWS S3特定). (可选)|
 
 
 __示例__
 
-## 创建连接Minio Server的客户端
+## 创建MinIO客户端
 
 ```js
 var Minio = require('minio')
@@ -79,7 +82,7 @@ var minioClient = new Minio.Client({
 });
 ```
 
-## 创建连接AWS S3的客户端
+## 创建AWS S3客户端
 
 
 ```js
@@ -105,18 +108,8 @@ __参数__
 | 参数| 类型 | 描述 |
 |---|---|---|
 |`bucketName`  | _string_  | 存储桶名称。 |
-| `region`  |  _string_ | 存储桶被创建的region(地区)，默认是us-east-1(美国东一区)，下面列举的是其它合法的值： |
-| | |us-east-1 |
-| | |us-west-1 |
-| | |us-west-2 |
-| | |eu-west-1 |
-| | |eu-central-1|
-| | |ap-southeast-1|
-| | |ap-northeast-1|
-| | |ap-southeast-2|
-| | |sa-east-1|
-| | |cn-north-1|
-|`callback(err)`  |_function_   | 回调函数，`err`做为错误信息参数。如果创建存储桶成功则`err`为null。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `region`  |  _string_ | 存储桶被创建的region(地区)。这个参数是可选的。默认值是us-east-1(美国东一区)|
+|`callback(err)`  |_function_   | 回调函数，`err`做为错误信息参数。如果成功创建存储桶则`err`为null。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -142,7 +135,7 @@ __参数__
 |---|---|---|
 |`callback(err, bucketStream) `  | _function_  | 回调函数，第一个参数是错误信息。`bucketStream`是带有存储桶信息的流。如果没有传callback的话，则返回一个`Promise`对象。|
 
-bucketStream格式如下:-
+bucketStream发出对象的格式如下:-
 
 | 参数| 类型 | 描述 |
 |---|---|---|
@@ -173,19 +166,18 @@ __参数__
 | 参数| 类型 | 描述 |
 |---|---|---|
 | `bucketName`  |  _string_ | 存储桶名称。  |
-| `callback(err)`  | _function_  | 如果存储桶存在的话`err`就是null，否则`err.code`是`NoSuchBucket`。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err，exists)`  | _function_  | `exists`是一个指示`bucketName`是否存在的布尔变量。当操作期间发生错误时，`err`会被设置为true|
 
 __示例__
 
-
 ```js
-minioClient.bucketExists('mybucket', function(err) {
+minioClient.bucketExists('mybucket', function(err, exists) {
   if (err) {
-     if (err.code == 'NoSuchBucket') return console.log("bucket does not exist.")
-     return console.log(err)
+    return console.log(err)
   }
-  // if err is null it indicates that the bucket exists.
-  console.log('Bucket exists.')
+  if (exists) {
+    return console.log('Bucket exists.')
+  }
 })
 ```
 
@@ -254,9 +246,9 @@ stream.on('error', function(err) { console.log(err) } )
 ```
 
 <a name="listObjectsV2"></a>
-### listObjectsV2(bucketName, prefix, recursive)
+### listObjectsV2(bucketName, prefix, recursive，startAfter)
 
-使用S3 listing objects V2版本API列出所有对象。
+使用S3列表对象V2版本API列出存储桶中的所有对象。
 
 __参数__
 
@@ -266,7 +258,7 @@ __参数__
 | `bucketName` | _string_ | 存储桶名称。 |
 | `prefix`  | _string_  |  要列出的对象的前缀。（可选，默认值是`''`） |
 | `recursive`  | _bool_  | `true`代表递归查找，`false`代表类似文件夹查找，以'/'分隔，不查子文件夹。（可选，默认值是`false`）  |
-
+| `startAfter`  | _string_  |  指定在列出存储桶中对象后要启动的对象名称 (可选, 默认值为`''`). |
 
 __返回值__
 
@@ -344,7 +336,7 @@ Stream.on('error', function(err) {
 <a name="getObject"></a>
 ### getObject(bucketName, objectName[, callback])
 
-下载对象。
+下载流式对象。
 
 __参数__
 
@@ -378,7 +370,7 @@ minioClient.getObject('mybucket', 'photo.jpg', function(err, dataStream) {
 <a name="getPartialObject"></a>
 ### getPartialObject(bucketName, objectName, offset, length[, callback])
 
-下载对象中指定区间的字节数组，并返回流。
+将对象指定范围的字节作为流进行下载。
 
 __参数__
 
@@ -441,7 +433,7 @@ minioClient.fGetObject('mybucket', 'photo.jpg', '/tmp/photo.jpg', function(err) 
 })
 ```
 <a name="putObject"></a>
-### putObject(bucketName, objectName, stream, size, contentType[, callback])
+### putObject(bucketName, objectName, stream, size, metaData[, callback])
 
 从一个stream/Buffer中上传一个对象。
 
@@ -456,8 +448,8 @@ __参数__
 | `objectName`  |_string_   | 对象名称。  |
 | `stream`  | _Stream_  |可以读的流。   |
 |`size`   | _number_  | 对象的大小（可选）。  |
-|`contentType`   | _string_  | 对象的Content-Type（可选，默认是`application/octet-stream`）。|
-| `callback(err, etag)` | _function_ | 如果`err`不是null则代表有错误，`etag` _string_是上传的对象的etag值。如果没有传callback的话，则返回一个`Promise`对象。 |
+|`metaData`   | _Javascript Object_  | 对象的元数据（可选）。|
+| `callback(err, etag)` | _function_ | 如果有错误，则用非null调用Callback函数。`etag` _string_是上传的对象的etag值。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -488,8 +480,8 @@ __参数__
 | `bucketName`  |_string_   | 存储桶名称。  |
 | `objectName`  |_string_   | 对象名称。  |
 |`string or Buffer`   | _Stream_ or _Buffer_  |字符串可者缓冲区   |
-| `contentType`  | _string_   | 对象的Content-Type（可选，默认是`application/octet-stream`）。 |
-| `callback(err, etag)`  | _function_  |如果`err`不是null则代表有错误，`etag` _string_是上传的对象的etag值。 |
+| `metaData`  | _Javascript Object_  | 对象的元数据（可选）。 |
+| `callback(err, etag)`  | _function_  |如果有错误，则用非null调用Callback函数。`etag` _string_是上传的对象的etag值。 |
 
 
 __示例__
@@ -502,9 +494,9 @@ minioClient.putObject('mybucket', 'hello-file', buffer, function(err, etag) {
 })
 ```
 <a name="fPutObject"></a>
-### fPutObject(bucketName, objectName, filePath, contentType[, callback])
+### fPutObject(bucketName, objectName, filePath, metaData[, callback])
 
-上传文件。
+上传文件内容到objectName。
 
 __参数__
 
@@ -514,15 +506,22 @@ __参数__
 | `bucketName`  | _string_  | 存储桶名称。  |
 |`objectName`   |_string_   | 对象名称。  |
 | `filePath`  | _string_  | 要上传的文件路径。  |
-| `contentType`  | _string_  | 对象的Content-Type。  |
-| `callback(err, etag)`  |  _function_ | 如果`err`不是null则代表有错误，`etag` _string_是上传的对象的etag值。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `metaData`  | _Javascript Object_  | 对象的元数据。  |
+| `callback(err, etag)`  |  _function_ | 如果有错误，则用非null调用Callback函数。`etag` _string_是上传的对象的etag值。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 __示例__
 
+单个对象的最大大小限制在5TB。putObject在对象大于5MiB时，自动使用multiple parts方式上传。这样的话，当上传失败的时候，客户端只需要上传未成功的部分即可（类似断点上传）。上传的对象使用MD5SUM签名进行完整性验证。
 
 ```js
 var file = '/tmp/40mbfile'
-minioClient.fPutObject('mybucket', '40mbfile', file, 'application/octet-stream', function(err, etag) {
+var metaData = {
+  'Content-Type': 'text/html',
+  'Content-Language': 123,
+  'X-Amz-Meta-Testing': 1234,
+  'example': 5678
+}
+minioClient.fPutObject('mybucket', '40mbfile', file, metaData, function(err, etag) {
   return console.log(err, etag) // err should be null
 })
 ```
@@ -541,7 +540,7 @@ __参数__
 |`objectName`   |_string_   | 对象名称。  |
 | `sourceObject`  | _string_  | 源对象的名称  |
 | `conditions`  | _CopyConditions_  | 允许拷贝需要满足的条件。  |
-| `callback(err, {etag, lastModified})`  |  _function_ | 如果`err`不是null则代表有错误，`etag` _string_是上传的对象的etag值，lastModified _Date_是新拷贝对象的最后修改时间。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err, {etag, lastModified})`  |  _function_ | 如果有错误，则用非null调用Callback函数。`etag` _string_是上传的对象的etag值，lastModified _Date_是新拷贝对象的最后修改时间。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 __示例__
 
@@ -570,7 +569,7 @@ __参数__
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。  |
 | `objectName`  | _string_  | 对象名称。  |
-| `callback(err, stat)`  | _function_  |如果`err`不是null则代表有错误，`stat`含有对象的元数据信息，格式如下所示。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err, stat)`  | _function_  |如果有错误，则用非null调用Callback函数。`stat`含有对象的元数据信息，格式如下所示。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 
@@ -578,7 +577,7 @@ __参数__
 |---|---|---|
 | `stat.size`  | _number_  | 对象的大小。  |
 | `stat.etag`  | _string_  | 对象的etag值。  |
-| `stat.contentType`  | _string_  | 对象的Content-Type。|
+| `stat.metaData`  | _Javascript Object_ | 对象的元数据。|
 | `stat.lastModified`  | _string_  | Last 最后修改时间。|
 
 
@@ -606,7 +605,7 @@ __参数__
 |---|---|---|
 |`bucketName`   |  _string_ | 存储桶名称。  |
 | objectName  |  _string_ | 对象名称。  |
-| `callback(err)`  | _function_  | 如果`err`不是null则代表有错误。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err)`  | _function_  | 如果有错误，则用非null调用Callback函数。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -621,6 +620,54 @@ minioClient.removeObject('mybucket', 'photo.jpg', function(err) {
 })
 ```
 
+<a name="removeObjects"></a>
+### removeObjects(bucketName, objectsList[, callback])
+
+删除对象列表中的所有对象。
+
+__Parameters__
+
+
+| 参数 | 类型 | 描述 |
+| ---- | ---- | ---- |
+| `bucketName` | _string_ | 存储桶的名称。 |
+| `objectsList`  | _object_  |  要移除存储桶中的对象列表。  |
+| `callback(err)`  | _function_  | 如果有错误，则使用非null调用回调函数。 |
+
+
+__Example__
+
+
+```js
+
+var objectsList = []
+
+// List all object paths in bucket my-bucketname.
+var objectsStream = s3Client.listObjects('my-bucketname', 'my-prefixname', true)
+
+objectsStream.on('data', function(obj) {
+  objectsList.push(obj.name);
+})
+
+objectsStream.on('error', function(e) {
+  console.log(e);
+})
+
+objectsStream.on('end', function() {
+
+  s3Client.removeObjects('my-bucketname',objectsList, function(e) {
+    if (e) {
+        return console.log('Unable to remove Objects ',e)
+    }
+    console.log('Removed the objects successfully')
+  })
+
+})
+
+
+```
+
+
 <a name="removeIncompleteUpload"></a>
 ### removeIncompleteUpload(bucketName, objectName[, callback])
 
@@ -633,7 +680,7 @@ __参数__
 |---|---|---|
 | `bucketName`  |_string_   | 存储桶名称。  |
 | `objectName`  | _string_  | 对象名称。  |
-| `callback(err)`  | _function_  |如果`err`不是null则代表有错误。如果没有传callback的话，则返回一个`Promise`对象。  |
+| `callback(err)`  | _function_  |如果有错误，则用非null调用Callback函数。如果没有传callback的话，则返回一个`Promise`对象。  |
 
 
 __示例__
@@ -653,9 +700,9 @@ minioClient.removeIncompleteUpload('mybucket', 'photo.jpg', function(err) {
 Presigned URLs用于对私有对象提供临时的上传/下载功能。
 
 <a name="presignedUrl"></a>
-### presignedUrl(httpMethod, bucketName, objectName, expiry[, reqParams, cb])
+### presignedUrl(httpMethod, bucketName, objectName[, expiry, reqParams, requestDate, cb])
 
-生成一个给指定HTTP方法（'httpMethod'）请求用的presigned URL。浏览器/移动端的客户端可以用这个URL进行下载，即使其所在的存储桶是私有的。这个presigned URL可以设置一个失效时间，默认值是7天。
+生成一个给指定HTTP方法（'httpMethod'）请求用的presigned URL。浏览器/移动端的客户端可以用这个URL直接进行下载，即使其所在的存储桶是私有的。这个presigned URL可以设置一个以秒为单位的相关失效时间，之后URL不再有效。默认值是7天。
 
 
 __参数__
@@ -667,9 +714,10 @@ __参数__
 |`httpMethod` | _string_ | http方法，put、get等。 |
 |`bucketName` | _string_ | 存储桶名称。 |
 |`objectName` | _string_ | 对象名称。 |
-|`expiry`     | _number_ | 失效时间（以秒为单位），默认是7天，不得大于七天。 |
-|`reqParams`  | _object_ | 请求参数。 |
-|`callback(err, presignedUrl)` | _function_ | 如果`err`不是null则代表有错误。`presignedUrl`就是可临时上传/下载文件的URL。如果没有传callback的话，则返回一个`Promise`对象。 |
+|`expiry`     | _number_ | 失效时间（以秒为单位），默认是7天，不得大于七天。（可选） |
+|`reqParams`  | _object_ | 请求参数。（可选） |
+|`requestDate`  | _Date_ | 一个日期对象，url将会被发送到。 默认值为现在。 (可选) |
+|`callback(err, presignedUrl)` | _function_ | 如果有错误，则用非null调用Callback函数。`presignedUrl`就是可临时上传/下载文件的URL。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例1__
@@ -699,9 +747,9 @@ minioClient.presignedUrl('GET', 'mybucket', '', 1000, {'prefix': 'data', 'max-ke
 ```
 
 <a name="presignedGetObject"></a>
-### presignedGetObject(bucketName, objectName, expiry[, cb])
+### presignedGetObject(bucketName, objectName[, expiry, respHeaders, requestDate, cb])
 
-生成一个给HTTP GET请求用的presigned URL。浏览器/移动端的客户端可以用这个URL进行下载，即使其所在的存储桶是私有的。这个presigned URL可以设置一个失效时间，默认值是7天。
+生成一个给HTTP GET请求用的presigned URL。浏览器/移动端的客户端可以用这个URL直接下载，即使其所在的存储桶是私有的。这个presigned URL可以设置一个以秒为单位的相关失效时间，之后URL不再有效。默认值是7天。
 
 
 __参数__
@@ -713,7 +761,9 @@ __参数__
 |`bucketName` | _string_ | 存储桶名称。 |
 |`objectName` | _string_ | 对象名称。 |
 |`expiry`     | _number_ | 失效时间（以秒为单位），默认是7天，不得大于七天。 |
-|`callback(err, presignedUrl)` | _function_ | 如果`err`不是null则代表有错误。`presignedUrl`就是可用于临时下载的URL。 如果没有传callback的话，则返回一个`Promise`对象。 |
+|`respHeaders`  | _object_ | 要覆盖的响应表头 (可选) |
+|`requestDate`  | _Date_ | A date object, the url will be issued at. 默认值是现在。(可选) |
+|`callback(err, presignedUrl)` | _function_ | 如果有错误，则用非null调用Callback函数。`presignedUrl`就是可用于通过GET请求下载对象的URL。 如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -730,7 +780,7 @@ minioClient.presignedGetObject('mybucket', 'hello.txt', 24*60*60, function(err, 
 <a name="presignedPutObject"></a>
 ### presignedPutObject(bucketName, objectName, expiry[, callback])
 
-生成一个给HTTP PUT请求用的presigned URL。浏览器/移动端的客户端可以用这个URL进行上传，即使其所在的存储桶是私有的。这个presigned URL可以设置一个失效时间，默认值是7天。
+生成一个给HTTP PUT请求用的presigned URL。浏览器/移动端的客户端可以用这个URL进行上传，即使其所在的存储桶是私有的。这个presigned URL可以设置一个以秒为单位的相关失效时间，之后URL不再有效。默认值是7天。
 
 
 __参数__
@@ -741,7 +791,7 @@ __参数__
 |`bucketName` | _string_ | 存储桶名称。 |
 |`objectName` | _string_ | 对象名称。 |
 |`expiry`     | _number_ | 失效时间（以秒为单位），默认是7天，不得大于七天。 |
-|`callback(err, presignedUrl)` | _function_ | 如果`err`不是null则代表有错误。`presignedUrl`用于使用PUT请求进行上传。如果没有传callback的话，则返回一个`Promise`对象。 |
+|`callback(err, presignedUrl)` | _function_ | 如果有错误，则用非null调用Callback函数。`presignedUrl`用于使用PUT请求进行上传。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -766,7 +816,7 @@ __参数__
 | 参数  |  类型 | 描述  |
 |---|---|---|
 | `policy`  | _object_  | 通过minioClient.newPostPolicy()创建的Policy对象。 |
-| `callback(err, {postURL, formData})`  | _function_  |如果`err`不是null则代表有错误。`postURL`用于使用post请求上传。`formData`是POST请求体中的键值对对象。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err, {postURL, formData})`  | _function_  |如果有错误，则用非null调用Callback函数。`postURL`用于使用post请求上传。`formData`是POST请求体中的键值对对象。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 创建策略：
@@ -827,14 +877,14 @@ minioClient.presignedPostPolicy(policy, function(err, data) {
 })
 ```
 
-## 5. 存储桶策略/通知
+## 5. 存储桶策略和通知操作
 
 存储桶可以配置在指定事件类型和相应路径上触发通知。
 
 <a name="getBucketNotification"></a>
 ### getBucketNotification(bucketName[, cb])
 
-获取指定存储桶名称的通知配置。
+获取存储在S3提供商中的通知配置，该配置属于指定的存储桶名称。
 
 __参数__
 
@@ -843,7 +893,7 @@ __参数__
 | 参数  |  类型 | 描述  |
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。  |
-| `callback(err, bucketNotificationConfig)`  | _function_  | 如果`err`不是null则代表有错误。`bucketNotificationConfig`是相应存储桶上的通知配置对象。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err, bucketNotificationConfig)`  | _function_  | 如果有错误，则用非null调用Callback函数。`bucketNotificationConfig`是相应存储桶上的通知配置对象。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
@@ -869,25 +919,25 @@ __参数__
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。  |
 | `bucketNotificationConfig`  | _BucketNotification_   | 包含通知配置的Javascript对象。 |
-| `callback(err)`  | _function_  | 如果`err`不是null则代表有错误。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err)`  | _function_  | 如果有错误，则用非null调用Callback函数。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 __示例__
 
 ```js
 // Create a new notification object
-var bucketNotification = new Notify.BucketNotification();
+var bucketNotification = new Minio.NotificationConfig();
 
 // Setup a new topic configuration
-var arn = Notify.newARN('aws', 'sns', 'us-west-2', '408065449417', 'TestTopic')
-var topic = new Notify.TopicConfig(arn)
+var arn = Minio.buildARN('aws', 'sns', 'us-west-2', '408065449417', 'TestTopic')
+var topic = new Minio.TopicConfig(arn)
 topic.addFilterSuffix('.jpg')
 topic.addFilterPrefix('myphotos/')
-topic.addEvent(Notify.ObjectReducedRedundancyLostObject)
-topic.addEvent(Notify.ObjectCreatedAll)
+topic.addEvent(Minio.ObjectReducedRedundancyLostObject)
+topic.addEvent(Minio.ObjectCreatedAll)
 
 // Add the topic to the overall notification object
-bucketNotification.addTopicConfiguration(topic)
+bucketNotification.add(topic)
 
 minioClient.setBucketNotification('mybucket', bucketNotification, function(err) {
   if (err) return console.log(err)
@@ -898,7 +948,7 @@ minioClient.setBucketNotification('mybucket', bucketNotification, function(err) 
 <a name="removeAllBucketNotification"></a>
 ### removeAllBucketNotification(bucketName[, callback])
 
-删除指定存储桶上的通知配置。
+删除绑定在指定存储桶上的通知配置。
 
 __参数__
 
@@ -906,7 +956,7 @@ __参数__
 | 参数  |  类型 | 描述  |
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。 |
-| `callback(err)`  | _function_  | 如果`err`不是null则代表有错误。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err)`  | _function_  | 如果有错误，则用非null调用Callback函数。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 ```js
@@ -921,11 +971,11 @@ minioClient.removeAllBucketNotification('my-bucketname', function(e) {
 <a name="listenBucketNotification"></a>
 ### listenBucketNotification(bucketName, prefix, suffix, events)
 
-监听存储桶上的通知，可通过前缀、后缀、事件类型进行过滤。使用本API并不需要预先设置存储桶通知。这是Minio的一个扩展API，服务端基于过来的请求使用唯一ID自动注册或者取消注册。
+可监听存储桶上的通知。此外，还可以通过前缀、后缀和事件类型进行过滤。使用本API并不需要预先设置存储桶通知。这是MinIO的一个扩展API，服务端基于进来的请求使用唯一ID自动注册或者取消注册。
 
-返回一个`EventEmitter`对象，它可以广播一个`通知`事件。
+返回一个`EventEmitter`对象，它可以广播一个携有记录的`通知`事件。
 
-停止监听，调用`EventEmitter`的`stop()`方法。
+为了停止监听，可调用`EventEmitter`的`stop()`方法。
 
 __参数__
 
@@ -948,9 +998,9 @@ listener.on('notification', function(record) {
 ```
 
 <a name="getBucketPolicy"></a>
-### getBucketPolicy(bucketName, objectPrefix[, callback])
+### getBucketPolicy(bucketName [, callback])
 
-获取指定存储桶的访问策略，如果`objectPrefix`不为空，则会取相应对象前缀上的访问策略。
+获取绑定在指定存储桶上的访问策略，如果`objectPrefix`不为空，则会根据对象的权限过滤存储桶策略。
 
 __参数__
 
@@ -958,8 +1008,7 @@ __参数__
 | 参数  |  类型 | 描述  |
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。 |
-| `objectPrefix` | _string_ | 用于过滤的对象前缀，`''`代表整个存储桶。 |
-| `callback(err, policy)`  | _function_  | 如果`err`不是null则代表有错误。`policy`是存储桶策略的字符串表示(`minio.Policy.NONE`，`minio.Policy.READONLY`，`minio.Policy.WRITEONLY`，或者`minio.Policy.READWRITE`). 如果没有传callback的话，则返回一个`Promise`对象。 |
+| `callback(err, policy)`  | _function_  | 如果有错误，则用非null调用Callback函数。`policy`是[存储桶策略](https://docs.aws.amazon.com/AmazonS3/latest/dev/example-bucket-policies.html)。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 ```js
@@ -973,9 +1022,9 @@ minioClient.getBucketPolicy('my-bucketname', 'img-', function(err, policy) {
 ```
 
 <a name="setBucketPolicy"></a>
-### setBucketPolicy(bucketName, objectPrefix, bucketPolicy[, callback])
+### setBucketPolicy(bucketName, bucketPolicy[, callback])
 
-设置指定存储桶的策略。如果`objectPrefix`不为空，则会给符合该前缀的对象（们）设置策略。
+设置指定存储桶的策略。这里是详细的[存储桶策略](https://docs.aws.amazon.com/AmazonS3/latest/dev/example-bucket-policies.html)。
 
 __参数__
 
@@ -983,23 +1032,30 @@ __参数__
 | 参数  |  类型 | 描述  |
 |---|---|---|
 | `bucketName`  | _string_  | 存储桶名称。 |
-| `objectPrefix` | _string_ | 要设置访问策略的对象前缀。`''`代表整个存储桶。 |
-| `bucketPolicy` | _string_ | 存储桶策略。可选值有：`minio.Policy.NONE`，`minio.Policy.READONLY`，`minio.Policy.WRITEONLY`或者`minio.Policy.READWRITE`。 |
-| `callback(err)`  | _function_  | 如果`err`不是null则代表有错误。如果没有传callback的话，则返回一个`Promise`对象。 |
+| `bucketPolicy` | _string_ | 存储桶策略。|
+| `callback(err)`  | _function_  | 如果有错误，则用非null调用Callback函数。如果没有传callback的话，则返回一个`Promise`对象。 |
 
 
 ```js
-// Set the bucket policy of `my-bucketname` to `readonly` (only allow retrieval),
-// but only for objects that start with 'img-'.
-minioClient.setBucketPolicy('my-bucketname', 'img-', minio.Policy.READONLY, function(err) {
+// Set the bucket policy of `my-bucketname`
+minioClient.setBucketPolicy('my-bucketname', JSON.stringify(policy), function(err) {
   if (err) throw err
 
-  console.log('Set bucket policy to \'readonly\'.')
+  console.log('Bucket policy set')
 })
 ```
 
+## 6. HTTP请求选项
+### setRequestOptions(选项)
 
-## 6. 了解更多
+设置HTTP/HTTPS请求选项。支持的选项是`agent`([http.Agent(https://nodejs.org/api/http.html#http_class_http_agent)])和与tls相关的选项('agent', 'ca', 'cert', 'ciphers', 'clientCertEngine', 'crl', 'dhparam', 'ecdhCurve', 'honorCipherOrder', 'key', 'passphrase', 'pfx', 'rejectUnauthorized', 'secureOptions', 'secureProtocol', 'servername', 'sessionIdContext')。与tls相关选项的参考文献在[这里](https://nodejs.org/api/tls.html#tls_tls_createsecurecontext_options)
+
+```js
+// Do not reject self signed certificates.
+minioClient.setRequestOptions({rejectUnauthorized: false})
+```
+
+## 7. 了解更多
 
 
 - [创建属于你的购物APP示例](https://github.com/minio/minio-js-store-app)

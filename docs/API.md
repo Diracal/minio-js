@@ -499,7 +499,7 @@ minioClient.putObject('mybucket', 'hello-file', buffer, function(err, etag) {
 <a name="fPutObject"></a>
 ### fPutObject(bucketName, objectName, filePath, metaData[, callback])
 
-Uploads contents from a file to objectName.
+Upload contents from a file to objectName.
 
 __Parameters__
 
@@ -714,6 +714,7 @@ __Parameters__
 
 | Param | Type | Description  |
 |---|---|---|
+|`httpMethod`|_string_|Method of HTTP, like PUT, GET and so on.|
 |`bucketName` | _string_ | Name of the bucket. |
 |`objectName` | _string_ | Name of the object. |
 |`expiry`     | _number_ | Expiry time in seconds. Default value is 7 days. (optional) |
